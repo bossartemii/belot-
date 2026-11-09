@@ -13,7 +13,7 @@ describe("match wrapper", () => {
   it("rotates the dealer after a null deal without awarding points", () => {
     let match = createMatch(100, 2, 501);
     for (let i = 0; i < 8; i++) {
-      match = reduceMatch(match, { type: "PASS", player: match.activeDeal.currentPlayer });
+      match = reduceMatch(match, { type: "BID", player: match.activeDeal.currentPlayer, choice: "PASS" });
     }
     expect(match.dealer).toBe(3);
     expect(match.activeDeal.dealer).toBe(3);
