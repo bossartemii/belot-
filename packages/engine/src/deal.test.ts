@@ -29,7 +29,7 @@ describe("single-deal state machine", () => {
     let state = createDeal(9, 2);
     for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS", player: state.currentPlayer });
     expect(state.phase).toBe("BIDDING_ROUND_2");
-    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS" });
+    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS", player: state.currentPlayer });
     expect(state.phase).toBe("REDEAL");
   });
 
@@ -37,7 +37,8 @@ describe("single-deal state machine", () => {
     expect(createDeal(44, 1)).toEqual(createDeal(44, 1));
   });
   it("settles a four-card trick before capturing it and advancing", () => {
-    let state = reduceDeal(createDeal(1234, 0), { type: "TAKE_UPCARD", player: state.currentPlayer });
+    let state = createDeal(1234, 0);
+    state = reduceDeal(state, { type: "TAKE_UPCARD", player: state.currentPlayer });
     state = reduceDeal(state, { type: "CONFIRM_DECLARATIONS", player: state.currentPlayer });
     for (let i = 0; i < 4; i++) {
       const hand = state.hands[state.currentPlayer];
