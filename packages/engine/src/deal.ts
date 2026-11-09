@@ -101,6 +101,7 @@ export type PlayerDealView = Readonly<Omit<DealState,
 /** Sanitized client view: opponents hands, stock and unrevealed announcement ranks/suits never leave the server. */
 export function getPlayerView(state: DealState, player: Seat): PlayerDealView {
   const { deck, hands, privateDetectedAnnouncements, declaredAnnouncements, validatedAnnouncements, revealedAnnouncements, ...publicState } = state;
+  void deck; void privateDetectedAnnouncements; void declaredAnnouncements; void validatedAnnouncements;
   return {
     ...publicState,
     ownHand: hands[player],
