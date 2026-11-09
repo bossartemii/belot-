@@ -28,12 +28,12 @@ export type DealState = Readonly<{
   }> | null;
 }>;
 export type DealAction =
-  | Readonly<{ type: "PASS" }>
-  | Readonly<{ type: "TAKE_UPCARD" }>
-  | Readonly<{ type: "BID_SUIT"; suit: Suit }>
-  | Readonly<{ type: "CONFIRM_DECLARATIONS" }>
+  | Readonly<{ type: "PASS"; player: PlayerId }>
+  | Readonly<{ type: "TAKE_UPCARD"; player: PlayerId }>
+  | Readonly<{ type: "BID_SUIT"; player: PlayerId; suit: Suit }>
+  | Readonly<{ type: "CONFIRM_DECLARATIONS"; player: PlayerId }>
   | Readonly<{ type: "ADVANCE_TRICK" }>
-  | Readonly<{ type: "PLAY_CARD"; cardId: Card["id"] }>;
+  | Readonly<{ type: "PLAY_CARD"; player: PlayerId; cardId: Card["id"] }>;
 
 export const teamOf = (seat: Seat): TeamId => seat % 2 === 0 ? 0 : 1;
 export const nextSeat = (seat: Seat): Seat => ((seat + 1) % 4) as Seat;
