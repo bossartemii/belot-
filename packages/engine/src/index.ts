@@ -50,18 +50,20 @@ function strength(card: Card, trump: Suit): number {
   return order.indexOf(card.rank);
 }
 
+/** Positive means a wins, negative means b wins, zero means equal under trick rules. */
+export function compareCards(a: Card, b: Card, leadSuit: Suit, trump: Suit): number {
+  const aTrump = a.suit === trump;
+  const bTrump = b.suit === trump;
+  if (aTrump !== bTrump) return aTrump ? 1 : -1;
+  if (a.suit === b.suit) return strength(a, trump) - strength(b, trump);
+  if (a.suit === leadSuit) return 1;
+  if (b.suit === leadSuit) return -1;
+  return 0;
+}
+
 function provisionalWinner(trick: readonly PlayedCard[], trump: Suit): Seat {
   const lead = trick[0].card.suit;
-  return [...trick].sort((a, b) => {
-    const at = a.card.suit === trump, bt = b.card.suit === trump;
-    if (at !== bt) return at ? -1 : 1;
-    if (a.card.suit !== b.card.suit) {
-      if (a.card.suit === lead) return -1;
-      if (b.card.suit === lead) return 1;
-      return 0;
-    }
-    return strength(b.card, trump) - strength(a.card, trump);
-  })[0].seat;
+  return trick.reduce((best, current) => compareCards(current.card, best.card, lead, trump) > 0 ? current : best).seat;
 }
 
 export function legalCards(hand: readonly Card[], trick: readonly PlayedCard[], trump: Suit): Card[] {
@@ -108,17 +110,7 @@ export function legalCards(hand: readonly Card[], trick: readonly PlayedCard[], 
 export function trickWinner(trick: readonly PlayedCard[], trump: Suit): Seat {
   if (trick.length !== 4) throw new Error("A trick must contain exactly four cards");
   const lead = trick[0].card.suit;
-  const winning = [...trick].sort((a, b) => {
-    const aTrump = a.card.suit === trump, bTrump = b.card.suit === trump;
-    if (aTrump !== bTrump) return aTrump ? -1 : 1;
-    if (a.card.suit !== b.card.suit) {
-      if (a.card.suit === lead) return -1;
-      if (b.card.suit === lead) return 1;
-      return 0;
-    }
-    return strength(b.card, trump) - strength(a.card, trump);
-  })[0];
-  return winning.seat;
+  return trick.reduce((best, current) => compareCards(current.card, best.card, lead, trump) > 0 ? current : best).seat;
 }
 
 export function trickPoints(trick: readonly PlayedCard[], trump: Suit, lastTrickBonus = 10): number {
