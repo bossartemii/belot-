@@ -150,8 +150,9 @@ function resolve(state: DealState): DealState {
     cardScores[capotTeam === 0 ? 1 : 0] = 0;
   }
   const ann: Record<TeamId, number> = { 0: 0, 1: 0 };
+  const belotScore: Record<TeamId, number> = { 0: 0, 1: 0 };
   for (const a of state.validatedAnnouncements) ann[a.team] += a.points;
-  for (const p of state.belotPlayers) ann[teamOf(p)] += 20;
+  for (const p of state.belotPlayers) { ann[teamOf(p)] += 20; belotScore[teamOf(p)] += 20; }
   const total0 = cardScores[0] + ann[0], total1 = cardScores[1] + ann[1];
   const totalDec = cardScores[declarer] + ann[declarer], totalDef = cardScores[defender] + ann[defender];
   const allDeclared: Record<TeamId, number> = { 0: 0, 1: 0 };
@@ -163,7 +164,7 @@ function resolve(state: DealState): DealState {
   if (isCapot && capotTeam === defender) {
     outcome = "CHUTE"; give(defender, fullPot + suspended); suspended = 0;
   } else if (isCapot && capotTeam === declarer) {
-    outcome = "FAIT"; give(declarer, totalDec + suspended); give(defender, ann[defender]); suspended = 0;
+    outcome = "FAIT"; give(declarer, totalDec + suspended); give(defender, belotScore[defender]); suspended = 0;
   } else if (totalDec > totalDef) {
     outcome = "FAIT"; give(declarer, totalDec + suspended); give(defender, totalDef); suspended = 0;
   } else if (totalDec < totalDef) {
