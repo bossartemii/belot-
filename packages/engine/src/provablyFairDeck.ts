@@ -42,12 +42,14 @@ async function sha256(value: string): Promise<string> {
   return toHex(new Uint8Array(digest));
 }
 
-export async function createServerSeedCommitment(): Promise<ServerSeedCommitment> {
+export async function createServerSeedCommitment(tableId: string, roundNumber: number): Promise<ServerSeedCommitment> {
+  if (!tableId.trim()) throw new Error("tableId is required");
+  if (!Number.isSafeInteger(roundNumber) || roundNumber < 1) throw new RangeError("roundNumber must be a positive safe integer");
   const serverSeedBytes = webCrypto().getRandomValues(new Uint8Array(32));
   const saltBytes = webCrypto().getRandomValues(new Uint8Array(16));
   const serverSeed = toHex(serverSeedBytes);
   const salt = toHex(saltBytes);
-  const commitment = await sha256(`belot-v1:${serverSeed}:${salt}`);
+  const commitment = await sha256(`belot-v2:${serverSeed}:${tableId}:${roundNumber}`);
   return { serverSeed, salt, commitment };
 }
 
@@ -92,7 +94,7 @@ export async function generateProvablyFairDeck(
   const seedBytes = fromHex(reveal.serverSeed);
   if (seedBytes.length !== 32) throw new Error("serverSeed must contain exactly 32 bytes");
   fromHex(reveal.salt);
-  const commitment = await sha256(`belot-v1:${reveal.serverSeed}:${reveal.salt}`);
+  const commitment = await sha256(`belot-v2:${reveal.serverSeed}:${reveal.tableId}:${reveal.roundNumber}`);
   if (commitment !== reveal.expectedCommitment.toLowerCase()) {
     throw new Error("Server seed does not match the commitment published before the cut");
   }
@@ -100,7 +102,8 @@ export async function generateProvablyFairDeck(
   const key = await webCrypto().subtle.importKey(
     "raw", seedBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
-  const context = `belot-v1:${reveal.salt}:${reveal.tableId}:${reveal.roundNumber}:${reveal.cutIndex}:${reveal.deckSize}`;
+  // The cut must not influence the shuffle: it only rotates the already committed deck.
+  const context = `belot-v2:${reveal.salt}:${reveal.tableId}:${reveal.roundNumber}:${reveal.deckSize}`;
   const counter = { value: 0 };
   const deck = baseDeck(reveal.deckSize);
 
@@ -114,11 +117,13 @@ export async function generateProvablyFairDeck(
 
 export async function verifyServerSeedCommitment(
   serverSeed: string,
-  salt: string,
+  tableId: string,
+  roundNumber: number,
   expectedCommitment: string
 ): Promise<boolean> {
   try {
-    const actual = await sha256(`belot-v1:${serverSeed}:${salt}`);
+    if (!tableId.trim() || !Number.isSafeInteger(roundNumber) || roundNumber < 1) return false;
+    const actual = await sha256(`belot-v2:${serverSeed}:${tableId}:${roundNumber}`);
     return actual === expectedCommitment.toLowerCase();
   } catch {
     return false;
