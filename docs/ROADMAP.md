@@ -7,7 +7,7 @@
 
 ## Phase 1 — Rules-complete single-table MVP
 - [x] Record the owner's Moldovan / Eastern European Bridge-Belot rules in `belot.md`.
-- [ ] Resolve the five remaining edge-case decisions listed in `belot.md` before competitive certification.
+- [x] Resolve the five edge-case decisions; normative details are recorded in `belot.md`.
 - [ ] Implement auction state machine and contract selection.
 - [ ] Implement declarations and belote/rebelote.
 - [ ] Implement full hand and match scoring with golden test fixtures.
