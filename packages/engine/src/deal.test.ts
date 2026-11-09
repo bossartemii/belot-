@@ -15,7 +15,7 @@ describe("single-deal state machine", () => {
   it("uses the upcard and deals the remaining 11 cards without duplicates", () => {
     const initial = createDeal(123, 0);
     const player = initial.currentPlayer;
-    const dealt = reduceDeal(initial, { type: "TAKE_UPCARD" });
+    const dealt = reduceDeal(initial, { type: "TAKE_UPCARD", player: initial.currentPlayer });
     expect(dealt.phase).toBe("DECLARATIONS");
     expect([0,1,2,3].map(p => dealt.hands[p as 0|1|2|3].length)).toEqual([8,8,8,8]);
     const cards = [0,1,2,3].flatMap(p => dealt.hands[p as 0|1|2|3]);
@@ -27,7 +27,7 @@ describe("single-deal state machine", () => {
 
   it("moves to round two after four passes and redeals after four more", () => {
     let state = createDeal(9, 2);
-    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS" });
+    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS", player: state.currentPlayer });
     expect(state.phase).toBe("BIDDING_ROUND_2");
     for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS" });
     expect(state.phase).toBe("REDEAL");
@@ -37,12 +37,12 @@ describe("single-deal state machine", () => {
     expect(createDeal(44, 1)).toEqual(createDeal(44, 1));
   });
   it("settles a four-card trick before capturing it and advancing", () => {
-    let state = reduceDeal(createDeal(1234, 0), { type: "TAKE_UPCARD" });
-    state = reduceDeal(state, { type: "CONFIRM_DECLARATIONS" });
+    let state = reduceDeal(createDeal(1234, 0), { type: "TAKE_UPCARD", player: state.currentPlayer });
+    state = reduceDeal(state, { type: "CONFIRM_DECLARATIONS", player: state.currentPlayer });
     for (let i = 0; i < 4; i++) {
       const hand = state.hands[state.currentPlayer];
       const card = legalCards(hand, state.currentTrick, state.trumpSuit!)[0];
-      state = reduceDeal(state, { type: "PLAY_CARD", cardId: card.id });
+      state = reduceDeal(state, { type: "PLAY_CARD", player: state.currentPlayer, cardId: card.id });
     }
     expect(state.phase).toBe("TRICK_SETTLED");
     expect(state.currentTrick).toHaveLength(4);
