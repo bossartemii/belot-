@@ -50,28 +50,58 @@ function strength(card: Card, trump: Suit): number {
   return order.indexOf(card.rank);
 }
 
+function provisionalWinner(trick: readonly PlayedCard[], trump: Suit): Seat {
+  const lead = trick[0].card.suit;
+  return [...trick].sort((a, b) => {
+    const at = a.card.suit === trump, bt = b.card.suit === trump;
+    if (at !== bt) return at ? -1 : 1;
+    if (a.card.suit !== b.card.suit) {
+      if (a.card.suit === lead) return -1;
+      if (b.card.suit === lead) return 1;
+      return 0;
+    }
+    return strength(b.card, trump) - strength(a.card, trump);
+  })[0].seat;
+}
+
 export function legalCards(hand: readonly Card[], trick: readonly PlayedCard[], trump: Suit): Card[] {
   if (trick.length === 0) return [...hand];
   const leadSuit = trick[0].card.suit;
   const sameSuit = hand.filter((c) => c.suit === leadSuit);
-  const trumps = hand.filter((c) => c.suit === trump);
-  const currentTrump = trick.filter((p) => p.card.suit === trump).sort((a, b) => strength(b.card, trump) - strength(a.card, trump))[0];
-
   if (sameSuit.length > 0) {
-    if (leadSuit === trump && currentTrump) {
-      const higher = sameSuit.filter((c) => strength(c, trump) > strength(currentTrump.card, trump));
-      return higher.length ? higher : sameSuit;
+    if (leadSuit === trump) {
+      const highestTrump = trick.filter((p) => p.card.suit === trump)
+        .sort((a, b) => strength(b.card, trump) - strength(a.card, trump))[0];
+      if (highestTrump) {
+        const higher = sameSuit.filter((c) => strength(c, trump) > strength(highestTrump.card, trump));
+        if (higher.length > 0) return higher;
+      }
     }
     return sameSuit;
   }
-  if (trumps.length > 0) {
-    if (currentTrump) {
-      const higher = trumps.filter((c) => strength(c, trump) > strength(currentTrump.card, trump));
-      return higher.length ? higher : trumps;
-    }
-    return trumps;
+
+  const trumps = hand.filter((c) => c.suit === trump);
+  if (trumps.length === 0) return [...hand];
+
+  // Trump was led: partner exemption never applies; all players must follow trump and overtrump.
+  if (leadSuit === trump) {
+    const highestTrump = trick.filter((p) => p.card.suit === trump)
+      .sort((a, b) => strength(b.card, trump) - strength(a.card, trump))[0];
+    const higher = highestTrump ? trumps.filter((c) => strength(c, trump) > strength(highestTrump.card, trump)) : [];
+    return higher.length > 0 ? higher : trumps;
   }
-  return [...hand];
+
+  // On a plain-suit lead, a partner currently winning removes both cut and overcut obligations.
+  const winner = provisionalWinner(trick, trump);
+  if (winner % 2 === (trick[0].seat % 2)) return [...hand];
+
+  const highestTrump = trick.filter((p) => p.card.suit === trump)
+    .sort((a, b) => strength(b.card, trump) - strength(a.card, trump))[0];
+  if (highestTrump) {
+    const higher = trumps.filter((c) => strength(c, trump) > strength(highestTrump.card, trump));
+    if (higher.length > 0) return higher;
+  }
+  return trumps;
 }
 
 export function trickWinner(trick: readonly PlayedCard[], trump: Suit): Seat {
