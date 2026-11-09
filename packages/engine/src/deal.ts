@@ -93,7 +93,11 @@ export function createDeal(seed: number, dealer: Seat, suspendedPoints = 0): Dea
   let cursor = 0;
   for (let block = 0; block < 2; block++) {
     const count = block === 0 ? 3 : 2;
-    for (let n = 0; n < count; n++) for (const seat of [0,1,2,3] as Seat[]) hands[seat].push(deck[cursor++]);
+    for (let n = 0; n < count; n++) {
+      for (const seat of [nextSeat(dealer), nextSeat(nextSeat(dealer)), nextSeat(nextSeat(nextSeat(dealer))), dealer] as Seat[]) {
+        hands[seat].push(deck[cursor++]);
+      }
+    }
   }
   const upCard = deck[cursor++];
   return {
