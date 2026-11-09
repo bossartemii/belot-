@@ -13,6 +13,7 @@ export interface FairDeckReveal {
   roundNumber: number;
   cutIndex: number;
   deckSize: 24 | 32;
+  expectedCommitment: string;
 }
 
 const SUITS: Suit[] = ["diamonds", "hearts", "clubs", "spades"];
@@ -92,8 +93,9 @@ export async function generateProvablyFairDeck(
   if (seedBytes.length !== 32) throw new Error("serverSeed must contain exactly 32 bytes");
   fromHex(reveal.salt);
   const commitment = await sha256(`belot-v1:${reveal.serverSeed}:${reveal.salt}`);
-  // The caller must compare this value with the commitment published before the cut.
-  void commitment;
+  if (commitment !== reveal.expectedCommitment.toLowerCase()) {
+    throw new Error("Server seed does not match the commitment published before the cut");
+  }
 
   const key = await webCrypto().subtle.importKey(
     "raw", seedBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
