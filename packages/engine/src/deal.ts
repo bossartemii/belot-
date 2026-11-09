@@ -16,8 +16,9 @@ export type DealState = Readonly<{
   phase: DealPhase; dealer: Seat; currentPlayer: Seat; deck: readonly Card[];
   hands: Readonly<Record<Seat, readonly Card[]>>; upCard: Card | null;
   trumpSuit: Suit | null; declarer: Seat | null; declarerTeam: TeamId | null;
-  biddingPasses: number; declaredAnnouncements: readonly Announcement[];
-  validatedAnnouncements: readonly Announcement[]; belotPlayers: readonly Seat[]; belotPendingPlayers: readonly Seat[];
+  biddingPasses: number; declarationIntents: readonly Readonly<{ player: Seat; types: readonly AnnouncementType[] }>[];
+  privateDetectedAnnouncements: readonly Announcement[]; declaredAnnouncements: readonly Announcement[];
+  validatedAnnouncements: readonly Announcement[]; revealedAnnouncements: readonly Announcement[]; announcementsRevealed: boolean; belotPlayers: readonly Seat[]; belotPendingPlayers: readonly Seat[];
   currentTrick: readonly PlayedCard[]; settledWinner: Seat | null; completedTricksCount: number;
   tricksWon: Readonly<Record<TeamId, number>>;
   capturedCards: Readonly<Record<TeamId, readonly Card[]>>;
@@ -31,7 +32,7 @@ export type DealAction =
   | Readonly<{ type: "PASS"; player: PlayerId }>
   | Readonly<{ type: "TAKE_UPCARD"; player: PlayerId }>
   | Readonly<{ type: "BID_SUIT"; player: PlayerId; suit: Suit }>
-  | Readonly<{ type: "CONFIRM_DECLARATIONS"; player: PlayerId }>
+  | Readonly<{ type: "DECLARE"; player: PlayerId; announcements: readonly AnnouncementType[] }>
   | Readonly<{ type: "ADVANCE_TRICK" }>
   | Readonly<{ type: "PLAY_CARD"; player: PlayerId; cardId: Card["id"] }>;
 
@@ -105,7 +106,7 @@ export function createDeal(seed: number, dealer: Seat, suspendedPoints = 0): Dea
   return {
     phase: "BIDDING_ROUND_1", dealer, currentPlayer: nextSeat(dealer), deck: deck.slice(cursor),
     hands, upCard, trumpSuit: null, declarer: null, declarerTeam: null, biddingPasses: 0,
-    declaredAnnouncements: [], validatedAnnouncements: [], belotPlayers: [], belotPendingPlayers: [],
+    declarationIntents: [], privateDetectedAnnouncements: [], declaredAnnouncements: [], validatedAnnouncements: [], revealedAnnouncements: [], announcementsRevealed: false, belotPlayers: [], belotPendingPlayers: [],
     currentTrick: [], settledWinner: null, completedTricksCount: 0, tricksWon: { 0: 0, 1: 0 },
     capturedCards: { 0: [], 1: [] }, lastTrickWinner: null, suspendedPoints,
     roundScore: null
@@ -131,8 +132,8 @@ function finishBidding(state: DealState, player: Seat, trump: Suit): DealState {
   return {
     ...state, phase: "DECLARATIONS", currentPlayer: nextSeat(state.dealer), deck: rest, hands,
     trumpSuit: trump, declarer: player, declarerTeam: teamOf(player),
-    declaredAnnouncements: found.found, validatedAnnouncements: validateAnnouncements(found.found, trump),
-    belotPlayers: [], belotPendingPlayers: [], biddingPasses: 0
+    declarationIntents: [], privateDetectedAnnouncements: found.found, declaredAnnouncements: [], validatedAnnouncements: [],
+    revealedAnnouncements: [], announcementsRevealed: false, belotPlayers: [], belotPendingPlayers: [], biddingPasses: 0
   };
 }
 
@@ -199,8 +200,20 @@ export function reduceDeal(state: DealState, action: DealAction): DealState {
       : { ...state, currentPlayer: nextSeat(state.currentPlayer), biddingPasses: passes };
   }
   if (state.phase === "DECLARATIONS") {
-    if (action.type !== "CONFIRM_DECLARATIONS") return state;
-    return { ...state, phase: "TRICK_PLAY", currentPlayer: nextSeat(state.dealer) };
+    if (action.type !== "DECLARE") return state;
+    if (state.declarationIntents.some(item => item.player === action.player)) return state;
+    const available = state.privateDetectedAnnouncements.filter(a => a.player === action.player);
+    const requestedCounts = action.announcements.reduce((counts, type) => ({ ...counts, [type]: (counts[type] ?? 0) + 1 }), {} as Partial<Record<AnnouncementType, number>>);
+    const availableCounts = available.reduce((counts, item) => ({ ...counts, [item.type]: (counts[item.type] ?? 0) + 1 }), {} as Partial<Record<AnnouncementType, number>>);
+    if (Object.entries(requestedCounts).some(([type, count]) => (availableCounts[type as AnnouncementType] ?? 0) < (count ?? 0))) return state;
+    const declarationIntents = [...state.declarationIntents, { player: action.player, types: [...action.announcements] }];
+    if (declarationIntents.length < 4) {
+      return { ...state, declarationIntents, currentPlayer: nextSeat(state.currentPlayer) };
+    }
+    const declaredAnnouncements = state.privateDetectedAnnouncements.filter(a =>
+      declarationIntents.some(item => item.player === a.player && item.types.includes(a.type))
+    );
+    return { ...state, phase: "TRICK_PLAY", declarationIntents, declaredAnnouncements, currentPlayer: nextSeat(state.dealer) };
   }
   if (state.phase === "TRICK_SETTLED" && action.type === "ADVANCE_TRICK" && state.settledWinner !== null) {
     const winner = state.settledWinner;
@@ -209,10 +222,14 @@ export function reduceDeal(state: DealState, action: DealAction): DealState {
     const capturedCards = { ...state.capturedCards, [team]: [...state.capturedCards[team], ...cards] };
     const tricksWon = { ...state.tricksWon, [team]: state.tricksWon[team] + 1 };
     const completed = state.completedTricksCount + 1;
+    const reveal = completed === 1 && state.trumpSuit !== null;
+    const validatedAnnouncements = reveal ? validateAnnouncements(state.declaredAnnouncements, state.trumpSuit!) : state.validatedAnnouncements;
     const next: DealState = {
       ...state, phase: "TRICK_PLAY", currentTrick: [], settledWinner: null,
       currentPlayer: winner, capturedCards, tricksWon, completedTricksCount: completed,
-      lastTrickWinner: winner
+      lastTrickWinner: winner, validatedAnnouncements,
+      revealedAnnouncements: reveal ? validatedAnnouncements : state.revealedAnnouncements,
+      announcementsRevealed: reveal ? true : state.announcementsRevealed
     };
     return completed === 8 ? resolve(next) : next;
   }
