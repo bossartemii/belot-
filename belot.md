@@ -16,7 +16,7 @@
 1. Il mazziere distribuisce 5 carte a ciascun giocatore, in senso orario, in due blocchi: prima 3, poi 2.
 2. Scopre una carta al centro: la carta d'invito (*Întoarsă*).
 3. Si svolge la licitazione.
-4. Dopo la scelta dell'atout, il mazziere distribuisce le restanti 3 carte a ciascun giocatore. Tutti hanno ora 8 carte.
+4. La carta d'invito viene aggiunta alla mano del giocatore che accetta/chiamata l'atout. Il mazziere distribuisce poi le 11 carte rimaste: 2 al chiamante e 3 a ciascuno degli altri giocatori. Tutti hanno così 8 carte e il mazzo da 32 è interamente distribuito. (Tre carte aggiuntive a tutti e quattro, oltre alla carta d'invito, richiederebbero 33 carte e sono quindi impossibili.)
 5. La prima carta della prima presa è giocata dal giocatore alla sinistra del mazziere.
 
 ## 3. Licitazione dell'atout (*Alegerea Tromfului*)
