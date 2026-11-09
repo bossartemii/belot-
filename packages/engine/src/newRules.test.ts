@@ -103,8 +103,8 @@ describe("match-wide reduced combinations", () => {
 
 describe("provably fair deck", () => {
   it("reconstructs the same unique deck from the revealed seed and cut", async () => {
-    const seed = await createServerSeedCommitment();
-    expect(await verifyServerSeedCommitment(seed.serverSeed, seed.salt, seed.commitment)).toBe(true);
+    const seed = await createServerSeedCommitment("table-test-1", 1);
+    expect(await verifyServerSeedCommitment(seed.serverSeed, "table-test-1", 1, seed.commitment)).toBe(true);
     const reveal = {
       serverSeed: seed.serverSeed,
       salt: seed.salt,
@@ -122,7 +122,7 @@ describe("provably fair deck", () => {
   });
 
   it("rejects a seed that does not match the published commitment", async () => {
-    const seed = await createServerSeedCommitment();
+    const seed = await createServerSeedCommitment("table-test-1", 1);
     await expect(generateProvablyFairDeck({
       serverSeed: seed.serverSeed,
       salt: seed.salt,
@@ -135,7 +135,7 @@ describe("provably fair deck", () => {
   });
 
   it("creates a 24-card deck for 1v1 and 3-player formats", async () => {
-    const seed = await createServerSeedCommitment();
+    const seed = await createServerSeedCommitment("table-test-2", 2);
     const deck = await generateProvablyFairDeck({
       serverSeed: seed.serverSeed,
       salt: seed.salt,
