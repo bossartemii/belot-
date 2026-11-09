@@ -8,10 +8,15 @@
 ## Phase 1 — Rules-complete single-table MVP
 - [x] Record the owner's Moldovan / Eastern European Bridge-Belot rules in `belot.md`.
 - [x] Resolve the five edge-case decisions; normative details are recorded in `belot.md`.
-- [ ] Implement auction state machine and contract selection.
-- [ ] Implement declarations and belote/rebelote.
-- [ ] Implement full hand and match scoring with golden test fixtures.
-- [ ] Add replayable seeded games and property-based tests.
+- [x] Implement first/second-round auction state machine and contract selection.
+- [x] Add two-stage announcement intents and second-trick reveal, with sanitized player views.
+- [x] Add Belot/Rebelot tracking from the played trump K/Q pair.
+- [x] Add the `TRICK_SETTLED` animation boundary before trick capture/next lead.
+- [x] Add a 501/1001 match wrapper with dealer rotation and Atârnat buffer carry-over.
+- [ ] Add golden scoring fixtures for Fait, Chute, Atârnat, offensive/defensive Capot and Belot/Rebelot.
+- [ ] Add exhaustive announcement-dominance and Belot/Rebelot edge-case tests.
+- [ ] Add replayable seeded full games and property-based tests.
+- [ ] Run and verify TypeScript build and Vitest suite in CI.
 
 ## Phase 2 — Online multiplayer
 - [ ] Integrate boardgame.io as the authoritative turn/state layer.
