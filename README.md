@@ -10,7 +10,7 @@ Open-source, mobile-first Bridge-Belot platform. This repository starts with a d
 - Trick winner and card-point tally, including trump jack/nine values.
 - Minimal responsive Svelte landing/client shell.
 
-**Not yet implemented:** full auction/contract state machine, declarations (belote/rebelote and other announcements), complete match scoring/capot logic, persistent accounts, matchmaking, reconnect, production multiplayer server, bots. Rule profile must be confirmed against the exact local Bridge-Belot rules before claiming tournament correctness.
+**Not yet implemented:** full auction/contract state machine, declarations (belote/rebelote and other announcements), complete match scoring/capot logic, persistent accounts, matchmaking, reconnect, production multiplayer server, bots. The canonical Moldovan / Eastern European Bridge-Belot rules profile is documented in `belot.md`; remaining edge-case decisions are listed there.
 
 ## Requirements
 
@@ -35,6 +35,7 @@ pnpm test
 
 - `apps/web` — SvelteKit client shell.
 - `packages/engine` — pure TypeScript rules domain; no UI or network dependencies.
+- `belot.md` — authoritative Moldovan / Eastern European Bridge-Belot rules profile.
 - `docs/ROADMAP.md` — staged delivery plan.
 - `docs/ARCHITECTURE.md` — trust boundaries and multiplayer design.
 
