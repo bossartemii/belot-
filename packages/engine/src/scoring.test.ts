@@ -6,8 +6,7 @@ import {
   compareAnnouncementDominance,
   filterValidAnnouncements,
   type Announcement,
-  type DealState,
-  type TeamId
+  type DealState
 } from "./deal";
 import { makeDeck, cardPoints, TRUMP_POINTS, PLAIN_POINTS } from "./index";
 
