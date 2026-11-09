@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDeal, reduceDeal } from "./deal";
+import { legalCards } from "./index";
 
 describe("single-deal state machine", () => {
   it("deals five cards per player and an upcard from a 32-card deck", () => {
@@ -35,4 +36,23 @@ describe("single-deal state machine", () => {
   it("is deterministic for the same seed and dealer", () => {
     expect(createDeal(44, 1)).toEqual(createDeal(44, 1));
   });
+  it("settles a four-card trick before capturing it and advancing", () => {
+    let state = reduceDeal(createDeal(1234, 0), { type: "TAKE_UPCARD" });
+    state = reduceDeal(state, { type: "CONFIRM_DECLARATIONS" });
+    for (let i = 0; i < 4; i++) {
+      const hand = state.hands[state.currentPlayer];
+      const card = legalCards(hand, state.currentTrick, state.trumpSuit!)[0];
+      state = reduceDeal(state, { type: "PLAY_CARD", cardId: card.id });
+    }
+    expect(state.phase).toBe("TRICK_SETTLED");
+    expect(state.currentTrick).toHaveLength(4);
+    expect(state.completedTricksCount).toBe(0);
+    const winner = state.settledWinner;
+    state = reduceDeal(state, { type: "ADVANCE_TRICK" });
+    expect(state.phase).toBe("TRICK_PLAY");
+    expect(state.currentTrick).toHaveLength(0);
+    expect(state.completedTricksCount).toBe(1);
+    expect(state.currentPlayer).toBe(winner);
+  });
+
 });
