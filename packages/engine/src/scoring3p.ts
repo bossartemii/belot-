@@ -12,7 +12,7 @@ export interface RoundScore3P {
 }
 
 export function pointsToBile(points: number): number {
-  if (!Number.isFinite(points) || points < 0) {
+  if (!Number.isSafeInteger(points) || points < 0) {
     throw new RangeError("Points must be a finite, non-negative number");
   }
   const base = Math.floor(points / 10);
@@ -35,7 +35,7 @@ export function calculateRound3Players(
     throw new Error("The maker must be one of the three players");
   }
   for (const player of players) {
-    if (!Number.isFinite(player.rawPoints) || player.rawPoints < 0) {
+    if (!Number.isSafeInteger(player.rawPoints) || player.rawPoints < 0) {
       throw new RangeError(`Invalid raw points for player ${player.id}`);
     }
   }
