@@ -16,7 +16,7 @@ export type DealState = Readonly<{
   hands: Readonly<Record<Seat, readonly Card[]>>; upCard: Card | null;
   trumpSuit: Suit | null; declarer: Seat | null; declarerTeam: TeamId | null;
   biddingPasses: number; declaredAnnouncements: readonly Announcement[];
-  validatedAnnouncements: readonly Announcement[]; belotPlayers: readonly Seat[];
+  validatedAnnouncements: readonly Announcement[]; belotPlayers: readonly Seat[]; belotPendingPlayers: readonly Seat[];
   currentTrick: readonly PlayedCard[]; completedTricksCount: number;
   tricksWon: Readonly<Record<TeamId, number>>;
   capturedCards: Readonly<Record<TeamId, readonly Card[]>>;
@@ -51,10 +51,8 @@ function compareAnnouncement(a: Announcement, b: Announcement, trump: Suit): num
 
 function detectAnnouncements(hands: Readonly<Record<Seat, readonly Card[]>>, trump: Suit) {
   const found: Announcement[] = [];
-  const belot: Seat[] = [];
-  for (const seat of [0,1,2,3] as Seat[]) {
+    for (const seat of [0,1,2,3] as Seat[]) {
     const hand = hands[seat];
-    if (hand.some(c => c.suit === trump && c.rank === "K") && hand.some(c => c.suit === trump && c.rank === "Q")) belot.push(seat);
     for (const suit of ["clubs","diamonds","hearts","spades"] as Suit[]) {
       const ranks = new Set(hand.filter(c => c.suit === suit).map(c => c.rank));
       let i = 0;
@@ -77,7 +75,7 @@ function detectAnnouncements(hands: Readonly<Record<Seat, readonly Card[]>>, tru
       }
     }
   }
-  return { found, belot };
+  return { found };
 }
 
 function validateAnnouncements(items: readonly Announcement[], trump: Suit): Announcement[] {
@@ -101,7 +99,7 @@ export function createDeal(seed: number, dealer: Seat, suspendedPoints = 0): Dea
   return {
     phase: "BIDDING_ROUND_1", dealer, currentPlayer: nextSeat(dealer), deck: deck.slice(cursor),
     hands, upCard, trumpSuit: null, declarer: null, declarerTeam: null, biddingPasses: 0,
-    declaredAnnouncements: [], validatedAnnouncements: [], belotPlayers: [],
+    declaredAnnouncements: [], validatedAnnouncements: [], belotPlayers: [], belotPendingPlayers: [],
     currentTrick: [], completedTricksCount: 0, tricksWon: { 0: 0, 1: 0 },
     capturedCards: { 0: [], 1: [] }, lastTrickWinner: null, suspendedPoints,
     roundScore: null
@@ -128,7 +126,7 @@ function finishBidding(state: DealState, player: Seat, trump: Suit): DealState {
     ...state, phase: "DECLARATIONS", currentPlayer: nextSeat(state.dealer), deck: rest, hands,
     trumpSuit: trump, declarer: player, declarerTeam: teamOf(player),
     declaredAnnouncements: found.found, validatedAnnouncements: validateAnnouncements(found.found, trump),
-    belotPlayers: found.belot, biddingPasses: 0
+    belotPlayers: [], belotPendingPlayers: [], biddingPasses: 0
   };
 }
 
@@ -203,15 +201,26 @@ export function reduceDeal(state: DealState, action: DealAction): DealState {
     const legal = legalCards(hand, state.currentTrick, state.trumpSuit);
     if (!legal.some(c => c.id === card.id)) return state;
     const hands = { ...state.hands, [state.currentPlayer]: hand.filter(c => c.id !== card.id) };
+    let belotPendingPlayers = [...state.belotPendingPlayers];
+    let belotPlayers = [...state.belotPlayers];
+    if (card.suit === state.trumpSuit && (card.rank === "K" || card.rank === "Q")) {
+      if (belotPendingPlayers.includes(state.currentPlayer)) {
+        belotPendingPlayers = belotPendingPlayers.filter(p => p !== state.currentPlayer);
+        if (!belotPlayers.includes(state.currentPlayer)) belotPlayers.push(state.currentPlayer);
+      } else if (hand.some(c => c.suit === state.trumpSuit && c.rank === "K") &&
+                 hand.some(c => c.suit === state.trumpSuit && c.rank === "Q")) {
+        belotPendingPlayers.push(state.currentPlayer);
+      }
+    }
     const played = [...state.currentTrick, { seat: state.currentPlayer, card }];
-    if (played.length < 4) return { ...state, hands, currentTrick: played, currentPlayer: nextSeat(state.currentPlayer) };
+    if (played.length < 4) return { ...state, hands, belotPendingPlayers, belotPlayers, currentTrick: played, currentPlayer: nextSeat(state.currentPlayer) };
     const winner = trickWinner(played, state.trumpSuit);
     const team = teamOf(winner);
     const cards = played.map(p => p.card);
     const capturedCards = { ...state.capturedCards, [team]: [...state.capturedCards[team], ...cards] };
     const tricksWon = { ...state.tricksWon, [team]: state.tricksWon[team] + 1 };
     const completed = state.completedTricksCount + 1;
-    const next: DealState = { ...state, hands, currentTrick: [], currentPlayer: winner, capturedCards,
+    const next: DealState = { ...state, hands, belotPendingPlayers, belotPlayers, currentTrick: [], currentPlayer: winner, capturedCards,
       tricksWon, completedTricksCount: completed, lastTrickWinner: winner };
     return completed === 8 ? resolve(next) : next;
   }
