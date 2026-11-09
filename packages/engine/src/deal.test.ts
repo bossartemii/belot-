@@ -16,7 +16,7 @@ describe("single-deal state machine", () => {
     const initial = createDeal(123, 0);
     const player = initial.currentPlayer;
     const dealt = reduceDeal(initial, { type: "TAKE_UPCARD", player: initial.currentPlayer });
-    expect(dealt.phase).toBe("DECLARATIONS");
+    expect(dealt.phase).toBe("TRICK_PLAY");
     expect([0,1,2,3].map(p => dealt.hands[p as 0|1|2|3].length)).toEqual([8,8,8,8]);
     const cards = [0,1,2,3].flatMap(p => dealt.hands[p as 0|1|2|3]);
     expect(cards).toHaveLength(32);
@@ -39,8 +39,8 @@ describe("single-deal state machine", () => {
   it("settles a four-card trick before capturing it and advancing", () => {
     let state = createDeal(1234, 0);
     state = reduceDeal(state, { type: "TAKE_UPCARD", player: state.currentPlayer });
-    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
     for (let i = 0; i < 4; i++) {
+      state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
       const hand = state.hands[state.currentPlayer];
       const card = legalCards(hand, state.currentTrick, state.trumpSuit!)[0];
       state = reduceDeal(state, { type: "PLAY_CARD", player: state.currentPlayer, cardId: card.id });
@@ -58,9 +58,7 @@ describe("single-deal state machine", () => {
 
   it("keeps opponents hands and unrevealed announcement details out of player views", () => {
     let state = reduceDeal(createDeal(321, 0), { type: "TAKE_UPCARD", player: 1 });
-    for (let i = 0; i < 4; i++) {
-      state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
-    }
+    state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
     const view = getPlayerView(state, 1);
     expect(view.ownHand).toHaveLength(8);
     expect(view.handSizes).toEqual({ 0: 8, 1: 8, 2: 8, 3: 8 });
