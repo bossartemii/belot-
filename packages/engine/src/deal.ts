@@ -110,8 +110,18 @@ export function createDeal(seed: number, dealer: Seat, suspendedPoints = 0): Dea
 
 function finishBidding(state: DealState, player: Seat, trump: Suit): DealState {
   const hands = { 0: [...state.hands[0]], 1: [...state.hands[1]], 2: [...state.hands[2]], 3: [...state.hands[3]] };
+  // The turned-up card belongs to the player who accepts/calls trump.
+  if (state.upCard) hands[player].push(state.upCard);
+  // A 32-card deck cannot support 3 extra cards for all four players after the upcard:
+  // the taker receives 2 from the stock, the other three players receive 3 each.
   let cursor = 0;
-  for (let n = 0; n < 3; n++) for (const seat of [0,1,2,3] as Seat[]) hands[seat].push(state.deck[cursor++]);
+  for (const seat of [nextSeat(state.dealer), nextSeat(nextSeat(state.dealer)), nextSeat(nextSeat(nextSeat(state.dealer))), state.dealer] as Seat[]) {
+    const count = seat === player ? 2 : 3;
+    for (let n = 0; n < count; n++) {
+      const card = state.deck[cursor++];
+      if (card) hands[seat].push(card);
+    }
+  }
   const rest = state.deck.slice(cursor);
   const found = detectAnnouncements(hands, trump);
   return {
@@ -140,17 +150,20 @@ function resolve(state: DealState): DealState {
   for (const p of state.belotPlayers) ann[teamOf(p)] += 20;
   const total0 = cardScores[0] + ann[0], total1 = cardScores[1] + ann[1];
   const totalDec = cardScores[declarer] + ann[declarer], totalDef = cardScores[defender] + ann[defender];
-  const pot = total0 + total1;
+  const allDeclared: Record<TeamId, number> = { 0: 0, 1: 0 };
+  for (const a of state.declaredAnnouncements) allDeclared[a.team] += a.points;
+  for (const p of state.belotPlayers) allDeclared[teamOf(p)] += 20;
+  const fullPot = cardScores[0] + cardScores[1] + allDeclared[0] + allDeclared[1];
   let outcome: RoundOutcome, award0 = 0, award1 = 0, suspended = state.suspendedPoints;
   const give = (team: TeamId, points: number) => { if (team === 0) award0 = points; else award1 = points; };
   if (isCapot && capotTeam === defender) {
-    outcome = "CHUTE"; give(defender, pot + suspended); suspended = 0;
+    outcome = "CHUTE"; give(defender, fullPot + suspended); suspended = 0;
   } else if (isCapot && capotTeam === declarer) {
     outcome = "FAIT"; give(declarer, totalDec + suspended); give(defender, ann[defender]); suspended = 0;
   } else if (totalDec > totalDef) {
     outcome = "FAIT"; give(declarer, totalDec + suspended); give(defender, totalDef); suspended = 0;
   } else if (totalDec < totalDef) {
-    outcome = "CHUTE"; give(defender, pot + suspended); suspended = 0;
+    outcome = "CHUTE"; give(defender, fullPot + suspended); suspended = 0;
   } else {
     outcome = "ATARNAT"; give(defender, totalDef); suspended += totalDec;
   }
