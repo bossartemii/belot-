@@ -6,7 +6,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./deal": "./src/deal.ts",
-    "./match": "./src/match.ts"
+    "./match": "./src/match.ts",
+    "./scoring3p": "./src/scoring3p.ts",
+    "./reduced-combinations": "./src/reducedCombinations.ts",
+    "./provably-fair": "./src/provablyFairDeck.ts"
   },
   "scripts": {
     "test": "vitest run"
