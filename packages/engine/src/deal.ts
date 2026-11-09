@@ -4,7 +4,7 @@ import {
 } from "./index";
 
 export type TeamId = 0 | 1;
-export type DealPhase = "BIDDING_ROUND_1" | "BIDDING_ROUND_2" | "DECLARATIONS" | "TRICK_PLAY" | "RESOLVED" | "REDEAL";
+export type DealPhase = "BIDDING_ROUND_1" | "BIDDING_ROUND_2" | "DECLARATIONS" | "TRICK_PLAY" | "TRICK_SETTLED" | "RESOLVED" | "REDEAL";
 export type AnnouncementType = "TERT" | "CINCIZECI" | "O_SUTA" | "CAREU";
 export type Announcement = Readonly<{
   id: string; player: Seat; team: TeamId; type: AnnouncementType;
@@ -17,7 +17,7 @@ export type DealState = Readonly<{
   trumpSuit: Suit | null; declarer: Seat | null; declarerTeam: TeamId | null;
   biddingPasses: number; declaredAnnouncements: readonly Announcement[];
   validatedAnnouncements: readonly Announcement[]; belotPlayers: readonly Seat[]; belotPendingPlayers: readonly Seat[];
-  currentTrick: readonly PlayedCard[]; completedTricksCount: number;
+  currentTrick: readonly PlayedCard[]; settledWinner: Seat | null; completedTricksCount: number;
   tricksWon: Readonly<Record<TeamId, number>>;
   capturedCards: Readonly<Record<TeamId, readonly Card[]>>;
   lastTrickWinner: Seat | null; suspendedPoints: number;
@@ -104,7 +104,7 @@ export function createDeal(seed: number, dealer: Seat, suspendedPoints = 0): Dea
     phase: "BIDDING_ROUND_1", dealer, currentPlayer: nextSeat(dealer), deck: deck.slice(cursor),
     hands, upCard, trumpSuit: null, declarer: null, declarerTeam: null, biddingPasses: 0,
     declaredAnnouncements: [], validatedAnnouncements: [], belotPlayers: [], belotPendingPlayers: [],
-    currentTrick: [], completedTricksCount: 0, tricksWon: { 0: 0, 1: 0 },
+    currentTrick: [], settledWinner: null, completedTricksCount: 0, tricksWon: { 0: 0, 1: 0 },
     capturedCards: { 0: [], 1: [] }, lastTrickWinner: null, suspendedPoints,
     roundScore: null
   };
@@ -198,6 +198,20 @@ export function reduceDeal(state: DealState, action: DealAction): DealState {
     if (action.type !== "CONFIRM_DECLARATIONS") return state;
     return { ...state, phase: "TRICK_PLAY", currentPlayer: nextSeat(state.dealer) };
   }
+  if (state.phase === "TRICK_SETTLED" && action.type === "ADVANCE_TRICK" && state.settledWinner !== null) {
+    const winner = state.settledWinner;
+    const team = teamOf(winner);
+    const cards = state.currentTrick.map(p => p.card);
+    const capturedCards = { ...state.capturedCards, [team]: [...state.capturedCards[team], ...cards] };
+    const tricksWon = { ...state.tricksWon, [team]: state.tricksWon[team] + 1 };
+    const completed = state.completedTricksCount + 1;
+    const next: DealState = {
+      ...state, phase: "TRICK_PLAY", currentTrick: [], settledWinner: null,
+      currentPlayer: winner, capturedCards, tricksWon, completedTricksCount: completed,
+      lastTrickWinner: winner
+    };
+    return completed === 8 ? resolve(next) : next;
+  }
   if (state.phase === "TRICK_PLAY" && action.type === "PLAY_CARD" && state.trumpSuit) {
     const hand = state.hands[state.currentPlayer];
     const card = hand.find(c => c.id === action.cardId);
@@ -219,14 +233,10 @@ export function reduceDeal(state: DealState, action: DealAction): DealState {
     const played = [...state.currentTrick, { seat: state.currentPlayer, card }];
     if (played.length < 4) return { ...state, hands, belotPendingPlayers, belotPlayers, currentTrick: played, currentPlayer: nextSeat(state.currentPlayer) };
     const winner = trickWinner(played, state.trumpSuit);
-    const team = teamOf(winner);
-    const cards = played.map(p => p.card);
-    const capturedCards = { ...state.capturedCards, [team]: [...state.capturedCards[team], ...cards] };
-    const tricksWon = { ...state.tricksWon, [team]: state.tricksWon[team] + 1 };
-    const completed = state.completedTricksCount + 1;
-    const next: DealState = { ...state, hands, belotPendingPlayers, belotPlayers, currentTrick: [], currentPlayer: winner, capturedCards,
-      tricksWon, completedTricksCount: completed, lastTrickWinner: winner };
-    return completed === 8 ? resolve(next) : next;
+    return {
+      ...state, phase: "TRICK_SETTLED", hands, belotPendingPlayers, belotPlayers,
+      currentTrick: played, currentPlayer: winner, settledWinner: winner
+    };
   }
   return state;
 }
