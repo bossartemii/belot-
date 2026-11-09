@@ -52,9 +52,15 @@ export function calculateRound3Players(
   const maxDefenderRaw = Math.max(...strongestDefenders.map((player) => player.rawPoints));
 
   const defenderAwards = { [d1.id]: bileD1, [d2.id]: bileD2 };
+  const applyCapotPenalties = (scores: Record<string, number>) => {
+    for (const player of players) {
+      if (!player.hasTrick) scores[player.id] = (scores[player.id] ?? 0) - 10;
+    }
+    return scores;
+  };
   if (bileMaker < maxDefenderBile) {
     return {
-      bile: { [maker.id]: 0, ...defenderAwards },
+      bile: applyCapotPenalties({ [maker.id]: 0, ...defenderAwards }),
       isBT: true,
       isDraw: false,
       log: `BT la bile: maker ${bileMaker} < defender ${maxDefenderBile}`
@@ -64,7 +70,7 @@ export function calculateRound3Players(
   if (bileMaker === maxDefenderBile) {
     if (maker.rawPoints < maxDefenderRaw) {
       return {
-        bile: { [maker.id]: 0, ...defenderAwards },
+        bile: applyCapotPenalties({ [maker.id]: 0, ...defenderAwards }),
         isBT: true,
         isDraw: false,
         log: `BT la egalitate de bile: ${maker.rawPoints} < ${maxDefenderRaw} puncte brute`
@@ -72,7 +78,7 @@ export function calculateRound3Players(
     }
     if (maker.rawPoints === maxDefenderRaw) {
       return {
-        bile: { [maker.id]: bileMaker, ...defenderAwards },
+        bile: applyCapotPenalties({ [maker.id]: bileMaker, ...defenderAwards }),
         isBT: false,
         isDraw: true,
         log: "Egalitate completă la bile și puncte brute"
@@ -81,7 +87,7 @@ export function calculateRound3Players(
   }
 
   return {
-    bile: { [maker.id]: bileMaker, ...defenderAwards },
+    bile: applyCapotPenalties({ [maker.id]: bileMaker, ...defenderAwards }),
     isBT: false,
     isDraw: false,
     log: `Joc realizat: ${bileMaker} bile din ${totalBile}`
