@@ -6,7 +6,8 @@
 - [x] SvelteKit responsive shell.
 
 ## Phase 1 — Rules-complete single-table MVP
-- [ ] Confirm the exact Bridge-Belot rule profile (auction order, pass/redeal, contract values, trump obligations, announcements, scoring and match target).
+- [x] Record the owner's Moldovan / Eastern European Bridge-Belot rules in `belot.md`.
+- [ ] Resolve the five remaining edge-case decisions listed in `belot.md` before competitive certification.
 - [ ] Implement auction state machine and contract selection.
 - [ ] Implement declarations and belote/rebelote.
 - [ ] Implement full hand and match scoring with golden test fixtures.
