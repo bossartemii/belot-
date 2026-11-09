@@ -91,9 +91,11 @@ Per ogni carta giocata, il server deve verificare le regole nell'ordine corretto
 1. **Risposta a seme (*Culoare*):** se il giocatore possiede almeno una carta del seme aperto nella presa, deve giocare quel seme.
 2. **Taglio (*Tăiere cu tromf*):** se è privo del seme aperto e la presa è momentaneamente vinta dagli avversari, deve giocare atout se ne possiede.
 3. **Eccezione del compagno:** se il compagno è già padrone della presa, il giocatore senza il seme aperto non è obbligato a tagliare e può scartare una carta qualsiasi.
-4. **Surtaglio (*Supra-tăiere / Urcare la tromf*):** quando la presa contiene già atout e il giocatore è tenuto a giocare atout, se possiede un atout di forza superiore al più alto atout sul tavolo, deve giocare un atout superiore.
+4. **Surtaglio (*Supra-tăiere / Urcare la tromf*):** se il giocatore è obbligato a giocare atout e sul tavolo è già presente atout, deve superare il più alto atout presente quando ne possiede uno superiore.
+5. **Eccezione limitata al seme ordinario:** quando il seme di apertura non è atout e il compagno è il vincitore provvisorio, il giocatore senza il seme di apertura può scartare liberamente. L'eccezione elimina sia l'obbligo di taglio sia quello di surtaglio, anche se il compagno ha già tagliato.
+6. **Apertura ad atout:** quando il seme di apertura è atout, l'eccezione del compagno non si applica. Chiunque abbia atout deve rispondere ad atout e surtagliare se possiede un atout superiore.
 
-La verifica deve usare il vincitore provvisorio della presa in quel preciso momento, non soltanto l'ultima carta giocata.
+La verifica deve calcolare il vincitore provvisorio dell'intera presa in quel preciso momento. L'obbligo di surtaglio si applica soltanto quando il giocatore è tenuto a giocare atout.
 
 ## 7. Risultato della smazzata e punteggio
 
@@ -108,19 +110,20 @@ Se l'attaccante realizza strettamente più punti della difensora:
 ### Contratto fallito (*În cădere / Baț*)
 Se l'attaccante realizza meno punti della difensora:
 - l'attaccante registra 0 punti per la smazzata;
-- la difensora incassa l'intero piatto: 162 punti base più tutti gli annunci di entrambe le squadre, compresi quelli che normalmente sarebbero stati annullati dal confronto degli annunci.
+- la difensora incassa l'intero piatto: 162 punti base più tutti gli annunci ordinari dichiarati da entrambe le squadre, compresi quelli che normalmente sarebbero stati annullati dal confronto degli annunci, e i Belot/Rebelot dichiarati.
 
 ### Parità (*Atârnat*)
-Se le squadre totalizzano esattamente gli stessi punti:
+Se le squadre totalizzano esattamente gli stessi punti (carte + annunci validi):
 - la difensora registra subito i propri punti;
-- i punti dell'attaccante restano appesi (*atârnat*);
-- i punti appesi vengono assegnati alla squadra che realizza il contratto in una successiva smazzata. Se anche la smazzata successiva finisce in parità, restano appesi.
+- l'attaccante registra 0 nel round;
+- i punti dell'attaccante vengono aggiunti al buffer `suspended_points`.
+
+Nella prima smazzata successiva risolta con un vincitore netto, la squadra che risolve il contratto — attaccante se lo rispetta, difensori se mandano in caduta l'attaccante — incassa i propri punti del round più l'intero buffer `suspended_points`, che viene quindi azzerato. Un altro Atârnat aggiunge i nuovi punti dell'attaccante al buffer esistente. Anche una caduta senza parità è un esito netto e risolve il buffer a favore dei difensori.
 
 ### Capot (*Valat*)
-Se una squadra conquista tutte e 8 le prese:
-- il punteggio base della smazzata è 250 punti, al posto dei 162 ordinari;
-- si aggiungono gli annunci validi secondo le regole sopra;
-- il motore deve registrare quale squadra ha fatto capot.
+Se una squadra conquista tutte e 8 le prese, il punteggio base diventa **250 punti fissi**, in sostituzione dei 162 ordinari (i 250 includono già tutte le prese e il Dix de der). Si aggiungono gli annunci validi.
+
+Se il capot è realizzato dagli attaccanti, il contratto è riuscito: gli attaccanti registrano 250 più i propri annunci validi e i difensori i propri eventuali Belot/Rebelot validi. Se il capot è realizzato dai difensori, si applicano contestualmente Capot e caduta: gli attaccanti registrano 0 e i difensori incassano 250 più **tutti** gli annunci dichiarati da entrambe le squadre, anche quelli ordinari normalmente annullati.
 
 ## 8. Configurazione della partita
 
@@ -143,13 +146,8 @@ Prima di dichiarare il motore conforme:
 - [ ] soglie 501 e 1001;
 - [ ] test deterministici per ogni caso limite e partite complete simulate.
 
-## 10. Punti da fissare prima della certificazione competitiva
+## 10. Decisioni normative confermate
 
-Le regole ricevute definiscono il profilo principale. Restano da precisare soltanto i casi in cui la descrizione non specifica una precedenza o un comportamento:
-1. **Confronto fra tipi diversi di annunci:** qual è la priorità assoluta fra Careu e sequenze (e fra due Careuri di valore diverso), oltre alle regole di lunghezza/terminale/seme già indicate?
-2. **Compagno già vincente e surtaglio:** l'eccezione del compagno elimina anche l'obbligo di surtagliare un atout già presente, oppure elimina soltanto l'obbligo iniziale di tagliare?
-3. **Capot e contratto:** se l'attaccante fa tutte le prese, il contratto è automaticamente riuscito; se il difensore fa capot, si applica comunque la regola di caduta con piatto maggiorato o il capot ha una contabilizzazione autonoma?
-4. **Punti appesi:** se la squadra che deve riscuotere i punti appesi fa fallire il proprio contratto nella mano successiva, i punti restano appesi fino alla prima mano con contratto riuscito? Questa specifica assume di sì.
-5. **Ultima presa e capot:** i 250 punti del capot sostituiscono il totale base di 162 (inclusi i 10 dell'ultima presa), non si sommano ad esso.
+Le cinque decisioni analitiche del proprietario sono state recepite nelle sezioni 5–7: gerarchia Careu/sequenze, eccezione del compagno limitata alle aperture non-atout, surtaglio obbligatorio su apertura ad atout, Capot difensivo con caduta e forfait di 250, buffer persistente Atârnat risolto al primo esito netto. La forza non-atout è 8 > 7 (l'8 ha forza 2 e il 7 forza 1 se la forza è espressa dal basso verso l'alto).
 
-Non introdurre regole aggiuntive senza una decisione esplicita del proprietario del gioco.
+Non restano aperti i cinque punti precedentemente elencati. Restano da implementare e verificare nel motore tutti i criteri di accettazione della sezione 9.
