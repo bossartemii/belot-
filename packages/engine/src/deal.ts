@@ -31,6 +31,7 @@ export type DealAction =
   | Readonly<{ type: "TAKE_UPCARD" }>
   | Readonly<{ type: "BID_SUIT"; suit: Suit }>
   | Readonly<{ type: "CONFIRM_DECLARATIONS" }>
+  | Readonly<{ type: "ADVANCE_TRICK" }>
   | Readonly<{ type: "PLAY_CARD"; cardId: Card["id"] }>;
 
 export const teamOf = (seat: Seat): TeamId => seat % 2 === 0 ? 0 : 1;
