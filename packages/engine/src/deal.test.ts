@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDeal, reduceDeal } from "./deal";
+import { createDeal, getPlayerView, reduceDeal } from "./deal";
 import { legalCards } from "./index";
 
 describe("single-deal state machine", () => {
@@ -39,7 +39,7 @@ describe("single-deal state machine", () => {
   it("settles a four-card trick before capturing it and advancing", () => {
     let state = createDeal(1234, 0);
     state = reduceDeal(state, { type: "TAKE_UPCARD", player: state.currentPlayer });
-    state = reduceDeal(state, { type: "CONFIRM_DECLARATIONS", player: state.currentPlayer });
+    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
     for (let i = 0; i < 4; i++) {
       const hand = state.hands[state.currentPlayer];
       const card = legalCards(hand, state.currentTrick, state.trumpSuit!)[0];
@@ -54,6 +54,20 @@ describe("single-deal state machine", () => {
     expect(state.currentTrick).toHaveLength(0);
     expect(state.completedTricksCount).toBe(1);
     expect(state.currentPlayer).toBe(winner);
+  });
+
+  it("keeps opponents hands and unrevealed announcement details out of player views", () => {
+    let state = reduceDeal(createDeal(321, 0), { type: "TAKE_UPCARD", player: 1 });
+    for (let i = 0; i < 4; i++) {
+      state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
+    }
+    const view = getPlayerView(state, 1);
+    expect(view.ownHand).toHaveLength(8);
+    expect(view.handSizes).toEqual({ 0: 8, 1: 8, 2: 8, 3: 8 });
+    expect(view.revealedAnnouncements).toEqual([]);
+    expect("privateDetectedAnnouncements" in view).toBe(false);
+    expect("hands" in view).toBe(false);
+    expect("deck" in view).toBe(false);
   });
 
 });
