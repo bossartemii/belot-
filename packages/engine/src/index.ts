@@ -38,8 +38,8 @@ export function deal(seed?: number): Card[][] {
 
 const TRUMP_ORDER: Rank[] = ["7", "8", "Q", "K", "10", "A", "9", "J"];
 const PLAIN_ORDER: Rank[] = ["7", "8", "9", "J", "Q", "K", "10", "A"];
-const TRUMP_POINTS: Record<Rank, number> = { "7": 0, "8": 0, "9": 14, "10": 10, J: 20, Q: 3, K: 4, A: 11 };
-const PLAIN_POINTS: Record<Rank, number> = { "7": 0, "8": 0, "9": 0, "10": 10, J: 2, Q: 3, K: 4, A: 11 };
+export const TRUMP_POINTS: Readonly<Record<Rank, number>> = { "7": 0, "8": 0, "9": 14, "10": 10, J: 20, Q: 3, K: 4, A: 11 };
+export const PLAIN_POINTS: Readonly<Record<Rank, number>> = { "7": 0, "8": 0, "9": 0, "10": 10, J: 2, Q: 3, K: 4, A: 11 };
 
 export function cardPoints(card: Card, trump: Suit): number {
   return card.suit === trump ? TRUMP_POINTS[card.rank] : PLAIN_POINTS[card.rank];
