@@ -29,7 +29,7 @@ describe("single-deal state machine", () => {
     let state = createDeal(9, 2);
     for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "BID", player: state.currentPlayer, choice: "PASS" });
     expect(state.phase).toBe("BIDDING_ROUND_2");
-    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS", player: state.currentPlayer });
+    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "BID", player: state.currentPlayer, choice: "PASS" });
     expect(state.phase).toBe("REDEAL");
   });
 
@@ -57,7 +57,7 @@ describe("single-deal state machine", () => {
   });
 
   it("keeps opponents hands and unrevealed announcement details out of player views", () => {
-    let state = reduceDeal(createDeal(321, 0), { type: "TAKE_UPCARD", player: 1 });
+    let state = reduceDeal(createDeal(321, 0), { type: "BID", player: 1, choice: "TAKE" });
     state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
     const view = getPlayerView(state, 1);
     expect(view.ownHand).toHaveLength(8);
