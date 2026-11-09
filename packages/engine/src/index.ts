@@ -93,7 +93,8 @@ export function legalCards(hand: readonly Card[], trick: readonly PlayedCard[], 
 
   // On a plain-suit lead, a partner currently winning removes both cut and overcut obligations.
   const winner = provisionalWinner(trick, trump);
-  if (winner % 2 === (trick[0].seat % 2)) return [...hand];
+  const actingSeat = ((trick[trick.length - 1].seat + 1) % 4) as Seat;
+  if (winner % 2 === actingSeat % 2) return [...hand];
 
   const highestTrump = trick.filter((p) => p.card.suit === trump)
     .sort((a, b) => strength(b.card, trump) - strength(a.card, trump))[0];
