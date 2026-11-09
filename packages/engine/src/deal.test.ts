@@ -15,7 +15,7 @@ describe("single-deal state machine", () => {
   it("uses the upcard and deals the remaining 11 cards without duplicates", () => {
     const initial = createDeal(123, 0);
     const player = initial.currentPlayer;
-    const dealt = reduceDeal(initial, { type: "TAKE_UPCARD", player: initial.currentPlayer });
+    const dealt = reduceDeal(initial, { type: "BID", player: initial.currentPlayer, choice: "TAKE" });
     expect(dealt.phase).toBe("TRICK_PLAY");
     expect([0,1,2,3].map(p => dealt.hands[p as 0|1|2|3].length)).toEqual([8,8,8,8]);
     const cards = [0,1,2,3].flatMap(p => dealt.hands[p as 0|1|2|3]);
@@ -27,7 +27,7 @@ describe("single-deal state machine", () => {
 
   it("moves to round two after four passes and redeals after four more", () => {
     let state = createDeal(9, 2);
-    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS", player: state.currentPlayer });
+    for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "BID", player: state.currentPlayer, choice: "PASS" });
     expect(state.phase).toBe("BIDDING_ROUND_2");
     for (let i = 0; i < 4; i++) state = reduceDeal(state, { type: "PASS", player: state.currentPlayer });
     expect(state.phase).toBe("REDEAL");
@@ -38,7 +38,7 @@ describe("single-deal state machine", () => {
   });
   it("settles a four-card trick before capturing it and advancing", () => {
     let state = createDeal(1234, 0);
-    state = reduceDeal(state, { type: "TAKE_UPCARD", player: state.currentPlayer });
+    state = reduceDeal(state, { type: "BID", player: state.currentPlayer, choice: "TAKE" });
     for (let i = 0; i < 4; i++) {
       state = reduceDeal(state, { type: "DECLARE", player: state.currentPlayer, announcements: [] });
       const hand = state.hands[state.currentPlayer];
