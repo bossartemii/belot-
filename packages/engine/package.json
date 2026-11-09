@@ -9,7 +9,8 @@
     "./match": "./src/match.ts",
     "./scoring3p": "./src/scoring3p.ts",
     "./reduced-combinations": "./src/reducedCombinations.ts",
-    "./provably-fair": "./src/provablyFairDeck.ts"
+    "./provably-fair": "./src/provablyFairDeck.ts",
+    "./dealer": "./src/dealerEngine.ts"
   },
   "scripts": {
     "test": "vitest run"
