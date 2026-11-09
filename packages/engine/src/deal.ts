@@ -3,6 +3,7 @@ import {
   type Card, type Suit, type Seat, type PlayedCard
 } from "./index";
 
+export type PlayerId = Seat;
 export type TeamId = 0 | 1;
 export type DealPhase = "BIDDING_ROUND_1" | "BIDDING_ROUND_2" | "DECLARATIONS" | "TRICK_PLAY" | "TRICK_SETTLED" | "RESOLVED" | "REDEAL";
 export type AnnouncementType = "TERT" | "CINCIZECI" | "O_SUTA" | "CAREU";
@@ -178,6 +179,7 @@ function resolve(state: DealState): DealState {
 
 /** Pure state transition. Invalid actions leave the original state untouched. */
 export function reduceDeal(state: DealState, action: DealAction): DealState {
+  if ("player" in action && action.player !== state.currentPlayer) return state;
   if (state.phase === "BIDDING_ROUND_1") {
     if (action.type === "TAKE_UPCARD" && state.upCard) return finishBidding(state, state.currentPlayer, state.upCard.suit);
     if (action.type !== "PASS") return state;
