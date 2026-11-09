@@ -24,6 +24,23 @@ describe("Belot rules core", () => {
     const trick = [{ seat: 0 as const, card: c("hearts", "8") }];
     expect(legalCards(hand, trick, "spades").map((x) => x.id)).toEqual(["spades-7"]);
   });
+  it("does not cut or overcut when partner is winning a plain-suit trick", () => {
+    const hand = [c("spades", "7"), c("spades", "J"), c("clubs", "A")];
+    const trick = [
+      { seat: 0 as const, card: c("hearts", "A") },
+      { seat: 1 as const, card: c("spades", "7") },
+      { seat: 2 as const, card: c("hearts", "7") }
+    ];
+    expect(legalCards(hand, trick, "spades").map((x) => x.id)).toEqual(hand.map((x) => x.id));
+  });
+  it("requires overtrumping when trump was led, even when partner is currently winning", () => {
+    const hand = [c("spades", "J"), c("spades", "7"), c("clubs", "A")];
+    const trick = [
+      { seat: 0 as const, card: c("spades", "9") },
+      { seat: 1 as const, card: c("spades", "A") }
+    ];
+    expect(legalCards(hand, trick, "spades").map((x) => x.id)).toEqual(["spades-J"]);
+  });
   it("recognizes the trump jack as highest and scores trump cards", () => {
     const trick = [
       { seat: 0 as const, card: c("hearts", "A") },
