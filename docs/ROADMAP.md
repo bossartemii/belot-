@@ -13,7 +13,7 @@
 - [x] Add Belot/Rebelot tracking from the played trump K/Q pair.
 - [x] Add the `TRICK_SETTLED` animation boundary before trick capture/next lead.
 - [x] Add a 501/1001 match wrapper with dealer rotation and Atârnat buffer carry-over.
-- [ ] Add golden scoring fixtures for Fait, Chute, Atârnat, offensive/defensive Capot and Belot/Rebelot.
+- [x] Add deterministic scoring fixtures for Fait, Chute, Atârnat, offensive/defensive Capot and Atârnat buffer release.
 - [ ] Add exhaustive announcement-dominance and Belot/Rebelot edge-case tests.
 - [ ] Add replayable seeded full games and property-based tests.
 - [ ] Run and verify TypeScript build and Vitest suite in CI.
