@@ -29,9 +29,7 @@ export type DealState = Readonly<{
   }> | null;
 }>;
 export type DealAction =
-  | Readonly<{ type: "PASS"; player: PlayerId }>
-  | Readonly<{ type: "TAKE_UPCARD"; player: PlayerId }>
-  | Readonly<{ type: "BID_SUIT"; player: PlayerId; suit: Suit }>
+  | Readonly<{ type: "BID"; player: PlayerId; choice: "PASS" | "TAKE" | Readonly<{ suit: Suit }> }>
   | Readonly<{ type: "DECLARE"; player: PlayerId; announcements: readonly AnnouncementType[] }>
   | Readonly<{ type: "ADVANCE_TRICK" }>
   | Readonly<{ type: "PLAY_CARD"; player: PlayerId; cardId: Card["id"] }>;
@@ -52,7 +50,7 @@ function compareAnnouncement(a: Announcement, b: Announcement, trump: Suit): num
   return Number(a.suit === trump) - Number(b.suit === trump);
 }
 
-function detectAnnouncements(hands: Readonly<Record<Seat, readonly Card[]>>, trump: Suit) {
+function detectAnnouncements(hands: Readonly<Record<Seat, readonly Card[]>>) {
   const found: Announcement[] = [];
     for (const seat of [0,1,2,3] as Seat[]) {
     const hand = hands[seat];
@@ -148,7 +146,7 @@ function finishBidding(state: DealState, player: Seat, trump: Suit): DealState {
     }
   }
   const rest = state.deck.slice(cursor);
-  const found = detectAnnouncements(hands, trump);
+  const found = detectAnnouncements(hands);
   return {
     ...state, phase: "TRICK_PLAY", currentPlayer: nextSeat(state.dealer), deck: rest, hands,
     trumpSuit: trump, declarer: player, declarerTeam: teamOf(player),
@@ -200,20 +198,22 @@ function resolve(state: DealState): DealState {
 }
 
 /** Pure state transition. Invalid actions leave the original state untouched. */
-export function reduceDeal(state: DealState, action: DealAction): DealState {
+export function reduceDeal(state: Readonly<DealState>, action: DealAction): Readonly<DealState> {
   if ("player" in action && action.player !== state.currentPlayer) return state;
   if (state.phase === "BIDDING_ROUND_1") {
-    if (action.type === "TAKE_UPCARD" && state.upCard) return finishBidding(state, state.currentPlayer, state.upCard.suit);
-    if (action.type !== "PASS") return state;
+    if (action.type !== "BID") return state;
+    if (action.choice === "TAKE" && state.upCard) return finishBidding(state, state.currentPlayer, state.upCard.suit);
+    if (action.choice !== "PASS") return state;
     const passes = state.biddingPasses + 1;
     return passes === 4
       ? { ...state, phase: "BIDDING_ROUND_2", currentPlayer: nextSeat(state.dealer), biddingPasses: 0 }
       : { ...state, currentPlayer: nextSeat(state.currentPlayer), biddingPasses: passes };
   }
   if (state.phase === "BIDDING_ROUND_2") {
-    if (action.type === "BID_SUIT" && state.upCard && action.suit !== state.upCard.suit)
-      return finishBidding(state, state.currentPlayer, action.suit);
-    if (action.type !== "PASS") return state;
+    if (action.type !== "BID") return state;
+    if (typeof action.choice === "object" && state.upCard && action.choice.suit !== state.upCard.suit)
+      return finishBidding(state, state.currentPlayer, action.choice.suit);
+    if (action.choice !== "PASS") return state;
     const passes = state.biddingPasses + 1;
     return passes === 4
       ? { ...state, phase: "REDEAL", currentPlayer: nextSeat(state.dealer), biddingPasses: passes }
@@ -281,3 +281,7 @@ export function reduceDeal(state: DealState, action: DealAction): DealState {
   }
   return state;
 }
+
+
+/** Canonical reducer name used by the transport/server layer. */
+export const dealReducer = reduceDeal;
