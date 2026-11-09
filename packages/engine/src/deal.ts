@@ -40,7 +40,7 @@ const emptyHands = (): Record<Seat, Card[]> => ({ 0: [], 1: [], 2: [], 3: [] });
 const rankOrder: Card["rank"][] = ["7","8","9","10","J","Q","K","A"];
 const careuPower: Record<Card["rank"], number> = { "7": 0, "8": 0, "9": 1500, "10": 1003, J: 2000, Q: 1001, K: 1002, A: 1004 };
 
-function compareAnnouncement(a: Announcement, b: Announcement, trump: Suit): number {
+export function compareAnnouncementDominance(a: Announcement, b: Announcement, trump: Suit): number {
   const ac = a.type === "CAREU", bc = b.type === "CAREU";
   if (ac !== bc) return ac ? 1 : -1;
   if (ac) return careuPower[a.rank] - careuPower[b.rank];
@@ -79,12 +79,12 @@ function detectAnnouncements(hands: Readonly<Record<Seat, readonly Card[]>>) {
   return { found };
 }
 
-function validateAnnouncements(items: readonly Announcement[], trump: Suit): Announcement[] {
+export function filterValidAnnouncements(items: readonly Announcement[], trump: Suit): Announcement[] {
   const t0 = items.filter(a => a.team === 0), t1 = items.filter(a => a.team === 1);
   if (!t0.length) return [...t1];
   if (!t1.length) return [...t0];
-  const best = (xs: readonly Announcement[]) => xs.reduce((a,b) => compareAnnouncement(b,a,trump) > 0 ? b : a);
-  const cmp = compareAnnouncement(best(t0), best(t1), trump);
+  const best = (xs: readonly Announcement[]) => xs.reduce((a,b) => compareAnnouncementDominance(b,a,trump) > 0 ? b : a);
+  const cmp = compareAnnouncementDominance(best(t0), best(t1), trump);
   return cmp > 0 ? [...t0] : cmp < 0 ? [...t1] : [];
 }
 
@@ -155,7 +155,7 @@ function finishBidding(state: DealState, player: Seat, trump: Suit): DealState {
   };
 }
 
-function resolve(state: DealState): DealState {
+export function resolveDealScores(state: Readonly<DealState>): DealState {
   if (state.declarerTeam === null || state.trumpSuit === null) return state;
   const trump = state.trumpSuit, declarer = state.declarerTeam, defender: TeamId = declarer === 0 ? 1 : 0;
   const cardScores: Record<TeamId, number> = { 0: 0, 1: 0 };
@@ -239,7 +239,7 @@ export function reduceDeal(state: Readonly<DealState>, action: DealAction): Read
     const tricksWon = { ...state.tricksWon, [team]: state.tricksWon[team] + 1 };
     const completed = state.completedTricksCount + 1;
     const reveal = completed === 1 && state.trumpSuit !== null;
-    const validatedAnnouncements = reveal ? validateAnnouncements(state.declaredAnnouncements, state.trumpSuit!) : state.validatedAnnouncements;
+    const validatedAnnouncements = reveal ? filterValidAnnouncements(state.declaredAnnouncements, state.trumpSuit!) : state.validatedAnnouncements;
     const next: DealState = {
       ...state, phase: "TRICK_PLAY", currentTrick: [], settledWinner: null,
       currentPlayer: winner, capturedCards, tricksWon, completedTricksCount: completed,
@@ -247,7 +247,7 @@ export function reduceDeal(state: Readonly<DealState>, action: DealAction): Read
       revealedAnnouncements: reveal ? validatedAnnouncements : state.revealedAnnouncements,
       announcementsRevealed: reveal ? true : state.announcementsRevealed
     };
-    return completed === 8 ? resolve(next) : next;
+    return completed === 8 ? resolveDealScores(next) : next;
   }
   if (state.phase === "TRICK_PLAY" && action.type === "PLAY_CARD" && state.trumpSuit) {
     if (state.completedTricksCount === 0 && !state.declarationPlayers.includes(state.currentPlayer)) return state;
