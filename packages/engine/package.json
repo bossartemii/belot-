@@ -3,7 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "vitest run" },
-  "devDependencies": { "vitest": "^3.0.5", "typescript": "^5.7.3" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./deal": "./src/deal.ts",
+    "./match": "./src/match.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5",
+    "typescript": "^5.7.3"
+  }
 }
