@@ -90,6 +90,25 @@ function validateAnnouncements(items: readonly Announcement[], trump: Suit): Ann
   return cmp > 0 ? [...t0] : cmp < 0 ? [...t1] : [];
 }
 
+export type PlayerDealView = Readonly<Omit<DealState,
+  "deck" | "hands" | "privateDetectedAnnouncements" | "declaredAnnouncements" | "validatedAnnouncements" | "revealedAnnouncements"
+> & {
+  ownHand: readonly Card[];
+  handSizes: Readonly<Record<Seat, number>>;
+  revealedAnnouncements: readonly Announcement[];
+}>;
+
+/** Sanitized client view: opponents hands, stock and unrevealed announcement ranks/suits never leave the server. */
+export function getPlayerView(state: DealState, player: Seat): PlayerDealView {
+  const { deck, hands, privateDetectedAnnouncements, declaredAnnouncements, validatedAnnouncements, revealedAnnouncements, ...publicState } = state;
+  return {
+    ...publicState,
+    ownHand: hands[player],
+    handSizes: { 0: hands[0].length, 1: hands[1].length, 2: hands[2].length, 3: hands[3].length },
+    revealedAnnouncements: state.announcementsRevealed ? revealedAnnouncements : []
+  };
+}
+
 export function createDeal(seed: number, dealer: Seat, suspendedPoints = 0): DealState {
   const deck = shuffle(makeDeck(), seededRandom(seed));
   const hands = emptyHands();
